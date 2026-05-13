@@ -46,7 +46,11 @@ export default function FranchisePage() {
   }, [socket]);
 
   const handleBid = (amount) => {
-    if (auction.isBidding || !auction.sessionId) return;
+    console.log('🔘 Bid Attempt:', { amount, sessionId: auction.sessionId, canBid, isBidding: auction.isBidding, socketConnected: socket?.connected });
+    if (auction.isBidding || !auction.sessionId) {
+      console.warn('❌ Bid Blocked:', { isBidding: auction.isBidding, hasSession: !!auction.sessionId });
+      return;
+    }
     setLastBidStatus(null);
     setBidErrorMsg('');
     placeBid(amount);
@@ -67,7 +71,7 @@ export default function FranchisePage() {
 
   // Check if this franchise can bid (purse / squad / overseas constraints)
   const canBid = myFranchise && isLive && hasPlayer &&
-    myFranchise.purse_remaining > auction.currentHighestBid &&
+    myFranchise.purse_remaining >= auction.currentHighestBid &&
     myFranchise.squad_count < 25 &&
     !(auction.currentPlayer?.nationality === 'Overseas' && myFranchise.overseas_count >= 8);
 
@@ -257,6 +261,24 @@ export default function FranchisePage() {
           {/* Bid Buttons */}
           {hasPlayer && isLive && (
             <div className="relative">
+              {/* Diagnostic Debug Panel (Visible only if connection or eligibility is an issue) */}
+              {(!socket?.connected || !canBid || !auction.sessionId) && (
+                <div className="mb-4 bg-blue-500/10 border border-blue-500/30 rounded-2xl p-4 text-[10px] uppercase tracking-widest font-bold text-blue-400 flex flex-wrap gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${socket?.connected ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`} />
+                    SOCKET: {socket?.connected ? 'CONNECTED' : 'DISCONNECTED'}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${auction.sessionId ? 'bg-green-500' : 'bg-red-500'}`} />
+                    SESSION: {auction.sessionId ? 'ACTIVE' : 'NONE'}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${canBid ? 'bg-green-500' : 'bg-red-500'}`} />
+                    ELIGIBLE: {canBid ? 'YES' : 'NO'}
+                  </div>
+                </div>
+              )}
+
               {!canBid && (
                 <div className="absolute inset-0 bg-black/70 backdrop-blur-md rounded-[2rem] z-10 flex items-center justify-center p-6 text-center border border-white/10">
                   <div>

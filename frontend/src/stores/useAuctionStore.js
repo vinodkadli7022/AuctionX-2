@@ -6,6 +6,7 @@ export const useAuctionStore = create((set, get) => ({
   sessionName: null,
   currentPlayer: null,
   currentHighestBid: 0,
+  bidCount: 0,
   leadingFranchise: null,
   timerEndTimestamp: null,
   timerSeconds: 30,
@@ -23,6 +24,7 @@ export const useAuctionStore = create((set, get) => ({
       sessionName: state.sessionName,
       currentPlayer: state.currentPlayerData,
       currentHighestBid: state.currentHighestBid || 0,
+      bidCount: state.bidCount || 0,
       timerEndTimestamp: state.timerEndTimestamp,
       leadingFranchise: state.leadingFranchiseId ? {
         id: state.leadingFranchiseId,
@@ -41,6 +43,7 @@ export const useAuctionStore = create((set, get) => ({
       sessionName: state.sessionName,
       currentPlayer: null,
       currentHighestBid: 0,
+      bidCount: 0,
       leadingFranchise: null,
       bidHistory: [],
     });
@@ -50,6 +53,7 @@ export const useAuctionStore = create((set, get) => ({
     set({
       currentPlayer: player,
       currentHighestBid: player.base_price,
+      bidCount: 0,
       leadingFranchise: null,
       timerEndTimestamp,
       bidHistory: [],
@@ -61,6 +65,7 @@ export const useAuctionStore = create((set, get) => ({
     const bid = { amount, franchiseId, franchiseName, franchiseLogo, franchiseColor, timestamp };
     set((s) => ({
       currentHighestBid: amount,
+      bidCount: bidCount !== undefined ? bidCount : (s.bidCount + 1),
       leadingFranchise: { id: franchiseId, name: franchiseName, logoUrl: franchiseLogo, primaryColor: franchiseColor },
       timerEndTimestamp: newTimerEnd,
       bidHistory: [bid, ...s.bidHistory].slice(0, 10),

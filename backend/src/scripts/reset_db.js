@@ -26,10 +26,19 @@ async function resetAndSeed() {
       console.log(`  ✅ Cleared ${table}`);
     }
 
-    // Add unique constraints if they don't exist (to prevent future duplicates)
-    console.log('\n🛡️ Adding unique constraints...');
-    await client.query('ALTER TABLE franchises ADD CONSTRAINT unique_short_name UNIQUE (short_name)');
-    await client.query('ALTER TABLE users ADD CONSTRAINT unique_email UNIQUE (email)');
+    // Add unique constraints if they don't exist
+    console.log('\n🛡️ Checking unique constraints...');
+    await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'unique_short_name') THEN
+          ALTER TABLE franchises ADD CONSTRAINT unique_short_name UNIQUE (short_name);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'unique_email') THEN
+          ALTER TABLE users ADD CONSTRAINT unique_email UNIQUE (email);
+        END IF;
+      END $$;
+    `);
     
     await client.query('SET session_replication_role = "origin";');
     await client.query('COMMIT');
@@ -44,13 +53,6 @@ async function resetAndSeed() {
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('❌ Reset failed:', err.message);
-    
-    // If it's just the constraint already exists error, we can ignore and continue
-    if (err.message.includes('already exists')) {
-        console.log('  (Constraint already exists, skipping...)');
-        await seedFranchisesAndUsers();
-        await seedPlayers();
-    }
   } finally {
     client.release();
     await pool.end();
