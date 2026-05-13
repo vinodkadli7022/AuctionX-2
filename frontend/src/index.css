@@ -1,0 +1,110 @@
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Inter:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-mi: #004BA0;
+  --color-csk: #F6C000;
+  --color-rcb: #CC0000;
+  --color-kkr: #3A225D;
+  --color-dc: #0078BC;
+  --color-rr: #EA1A85;
+  --color-pbks: #ED1B24;
+  --color-srh: #F7A721;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #0a0a1a;
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #111827; }
+::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #FFD700; }
+
+/* Utility classes */
+.font-display { font-family: 'Rajdhani', sans-serif; }
+.font-body    { font-family: 'Inter', sans-serif; }
+
+/* Glow animations */
+@keyframes gold-pulse {
+  0%, 100% { text-shadow: 0 0 20px rgba(255,215,0,0.4), 0 0 40px rgba(255,215,0,0.2); }
+  50%       { text-shadow: 0 0 40px rgba(255,215,0,0.8), 0 0 80px rgba(255,215,0,0.4); }
+}
+.gold-pulse { animation: gold-pulse 1.5s ease-in-out infinite; }
+
+@keyframes bid-flash {
+  0%   { background-color: rgba(255,215,0,0.3); }
+  100% { background-color: transparent; }
+}
+.bid-flash { animation: bid-flash 0.6s ease-out; }
+
+@keyframes live-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.2; }
+}
+.live-dot { animation: live-dot 1s ease-in-out infinite; }
+
+@keyframes slide-in-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.slide-in { animation: slide-in-up 0.4s ease-out; }
+
+@keyframes slow-zoom {
+  0%   { transform: scale(1); }
+  100% { transform: scale(1.1); }
+}
+.animate-slow-zoom {
+  animation: slow-zoom 20s ease-in-out infinite alternate;
+}
+
+@keyframes count-down-ring {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: 283; }
+}
+
+/* Glass card */
+.glass {
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+}
+
+/* Gold border glow */
+.gold-border {
+  border: 1px solid #FFD700;
+  box-shadow: 0 0 20px rgba(255,215,0,0.25), inset 0 0 20px rgba(255,215,0,0.05);
+}
+
+/* Franchise card leading indicator */
+.leading-franchise {
+  border: 2px solid #FFD700;
+  box-shadow: 0 0 30px rgba(255,215,0,0.4);
+}
+
+/* Status badges */
+.badge-sold      { @apply bg-green-900/60 text-green-400 border border-green-700/50; }
+.badge-unsold    { @apply bg-red-900/60 text-red-400 border border-red-700/50; }
+.badge-upcoming  { @apply bg-blue-900/60 text-blue-400 border border-blue-700/50; }
+.badge-auction   { @apply bg-yellow-900/60 text-yellow-400 border border-yellow-700/50; }
+
+/* Role badges */
+.badge-batsman   { @apply bg-sky-900/60 text-sky-400; }
+.badge-bowler    { @apply bg-green-900/60 text-green-400; }
+.badge-allrounder{ @apply bg-purple-900/60 text-purple-400; }
+.badge-keeper    { @apply bg-orange-900/60 text-orange-400; }

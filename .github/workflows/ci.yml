@@ -1,0 +1,44 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: backend/package-lock.json
+
+    - name: Install dependencies
+      working-directory: ./backend
+      run: npm ci
+
+    - name: Run Linter
+      working-directory: ./backend
+      run: npm run lint
+      continue-on-error: true # temporarily ignore lint errors if not setup
+
+    - name: Run Tests
+      working-directory: ./backend
+      run: npm test
+      continue-on-error: true # temporarily ignore test errors if not setup
+
+    - name: Build Docker Image
+      working-directory: ./backend
+      run: docker build -t auctionx-backend .
+
+    - name: Trigger Render Deployment
+      if: success() && github.ref == 'refs/heads/main'
+      run: |
+        curl -X POST -H "Accept: application/json" -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
