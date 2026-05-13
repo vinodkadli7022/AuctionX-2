@@ -40,9 +40,14 @@ export const bidService = {
       }
 
       // Validate bid amount
-      if (amount < state.currentHighestBid + MIN_BID_INCREMENT) {
+      // Rule: If it's the first bid, they can match the currentHighestBid (base price).
+      // Otherwise, they must exceed it by at least the MIN_BID_INCREMENT.
+      const isFirstBid = (state.bidCount || 0) === 0;
+      const minRequired = isFirstBid ? state.currentHighestBid : state.currentHighestBid + MIN_BID_INCREMENT;
+
+      if (amount < minRequired) {
         throw ApiError.badRequest(
-          `Bid must be at least ${formatMoney(state.currentHighestBid + MIN_BID_INCREMENT)}`
+          `Bid must be at least ${formatMoney(minRequired)}`
         );
       }
 

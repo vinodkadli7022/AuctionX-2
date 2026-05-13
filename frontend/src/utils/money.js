@@ -12,7 +12,17 @@ export function formatMoney(lakhs) {
   return `${lakhs} L`;
 }
 
-export function getBidIncrements(currentBid) {
+export function getBidIncrements(currentBid, isFirstBid = false) {
+  if (isFirstBid) {
+    return [
+      { label: formatMoney(currentBid), amount: currentBid, increment: 'BASE' },
+      { label: formatMoney(currentBid + 5), amount: currentBid + 5, increment: '+5L' },
+      { label: formatMoney(currentBid + 10), amount: currentBid + 10, increment: '+10L' },
+      { label: formatMoney(currentBid + 25), amount: currentBid + 25, increment: '+25L' },
+      { label: formatMoney(currentBid + 100), amount: currentBid + 100, increment: '+1Cr' },
+    ];
+  }
+
   return [
     { label: formatMoney(currentBid + 5), amount: currentBid + 5, increment: '+5L' },
     { label: formatMoney(currentBid + 10), amount: currentBid + 10, increment: '+10L' },

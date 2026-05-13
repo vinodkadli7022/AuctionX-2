@@ -63,7 +63,7 @@ export default function FranchisePage() {
   const isLive = auction.sessionStatus === 'live';
   const isPaused = auction.sessionStatus === 'paused';
   const isEnded = auction.sessionStatus === 'ended';
-  const bidIncrements = getBidIncrements(auction.currentHighestBid);
+  const bidIncrements = getBidIncrements(auction.currentHighestBid, auction.bidCount === 0);
 
   // Check if this franchise can bid (purse / squad / overseas constraints)
   const canBid = myFranchise && isLive && hasPlayer &&

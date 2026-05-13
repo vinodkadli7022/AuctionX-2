@@ -13,50 +13,48 @@ export function useAuctionSocket(sessionId) {
   const { updateFranchisePurse } = useFranchiseStore();
 
   useEffect(() => {
-    if (!accessToken || !sessionId) return;
+    if (!accessToken) return;
 
-    // Create socket with JWT auth
+    // Create socket with JWT auth immediately upon login
     const socket = io(SOCKET_URL, {
       auth: { token: accessToken },
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: Infinity,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
     });
 
     socketRef.current = socket;
 
-    // ─── Connection ─────────────────────────────────────────────────────────
     socket.on('connect', () => {
       console.log('🔌 Socket connected:', socket.id);
-      socket.emit('auction:join', {
-        sessionId,
-        role: user?.role,
-        franchiseId: user?.franchiseId,
-      });
+      // If we already have a sessionId, join immediately
+      if (sessionId) {
+        socket.emit('auction:join', {
+          sessionId,
+          role: user?.role,
+          franchiseId: user?.franchiseId,
+        });
+      }
     });
 
-    socket.on('connect_error', (err) => {
-      console.error('Socket connection error:', err.message);
-    });
+    socket.on('connect_error', (err) => console.error('Socket error:', err.message));
+    socket.on('disconnect', (reason) => console.warn('Socket disconnected:', reason));
 
-    socket.on('disconnect', (reason) => {
-      console.warn('Socket disconnected:', reason);
-    });
-
-    socket.on('reconnect', (attempt) => {
-      console.log(`Socket reconnected after ${attempt} attempts`);
-      // Re-join rooms after reconnect
-      socket.emit('auction:join', {
-        sessionId,
-        role: user?.role,
-        franchiseId: user?.franchiseId,
-      });
+    socket.on('reconnect', () => {
+      if (sessionId) {
+        socket.emit('auction:join', {
+          sessionId,
+          role: user?.role,
+          franchiseId: user?.franchiseId,
+        });
+      }
     });
 
     // ─── Auction Events ──────────────────────────────────────────────────────
-    socket.on('auction:session-started', auction.onSessionStarted);
+    socket.on('auction:session-started', (data) => {
+      console.log('🏁 Session started event received');
+      auction.onSessionStarted(data);
+    });
     socket.on('auction:player-nominated', auction.onPlayerNominated);
     socket.on('auction:bid-placed', auction.onBidPlaced);
     socket.on('auction:timer-tick', auction.onTimerTick);
@@ -65,16 +63,8 @@ export function useAuctionSocket(sessionId) {
     socket.on('auction:session-paused', auction.onSessionPaused);
     socket.on('auction:session-resumed', auction.onSessionResumed);
     socket.on('auction:session-ended', auction.onSessionEnded);
-
-    // ─── Franchise Private Events ────────────────────────────────────────────
     socket.on('franchise:purse-updated', updateFranchisePurse);
-
-    // ─── State Sync (for reconnects) ─────────────────────────────────────────
-    socket.on('auction:state-sync', (state) => {
-      auction.hydrateFromServer(state);
-    });
-
-    // ─── Bid Events ──────────────────────────────────────────────────────────
+    socket.on('auction:state-sync', (state) => auction.hydrateFromServer(state));
     socket.on('bid:accepted', () => auction.setBidding(false));
     socket.on('bid:error', (err) => {
       console.error('Bid error:', err.message);
@@ -82,19 +72,20 @@ export function useAuctionSocket(sessionId) {
     });
 
     return () => {
-      socket.off('auction:session-started');
-      socket.off('auction:player-nominated');
-      socket.off('auction:bid-placed');
-      socket.off('auction:timer-tick');
-      socket.off('auction:player-sold');
-      socket.off('auction:player-unsold');
-      socket.off('auction:session-paused');
-      socket.off('auction:session-resumed');
-      socket.off('auction:session-ended');
-      socket.off('franchise:purse-updated');
       socket.disconnect();
     };
-  }, [accessToken, sessionId]);
+  }, [accessToken]);
+
+  // Separate effect to join/re-join room when sessionId changes
+  useEffect(() => {
+    if (socketRef.current?.connected && sessionId) {
+      socketRef.current.emit('auction:join', {
+        sessionId,
+        role: user?.role,
+        franchiseId: user?.franchiseId,
+      });
+    }
+  }, [sessionId]);
 
   const placeBid = (amount) => {
     if (!socketRef.current?.connected) return;
