@@ -10,8 +10,11 @@ export function initSocketServer(io) {
   // ─── Authentication middleware ─────────────────────────────────────────────
   io.use((socket, next) => {
     const token = socket.handshake.auth?.token;
+    
+    // Allow unauthenticated connections as spectators
     if (!token) {
-      return next(new Error('Authentication required'));
+      socket.user = { role: 'spectator', email: 'guest@auctionx.in' };
+      return next();
     }
 
     try {
@@ -19,7 +22,9 @@ export function initSocketServer(io) {
       socket.user = decoded;
       next();
     } catch (err) {
-      next(new Error('Invalid or expired token'));
+      // If token is invalid, still allow as spectator but clear user data
+      socket.user = { role: 'spectator', email: 'guest@auctionx.in' };
+      next();
     }
   });
 

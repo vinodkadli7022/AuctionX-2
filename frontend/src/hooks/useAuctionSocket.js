@@ -13,9 +13,7 @@ export function useAuctionSocket(sessionId) {
   const { updateFranchisePurse } = useFranchiseStore();
 
   useEffect(() => {
-    if (!accessToken) return;
-
-    // Create socket with JWT auth immediately upon login
+    // Create socket with JWT auth (if available)
     const socket = io(SOCKET_URL, {
       auth: { token: accessToken },
       transports: ['websocket', 'polling'],
