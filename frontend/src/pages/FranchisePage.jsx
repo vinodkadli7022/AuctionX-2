@@ -139,7 +139,7 @@ export default function FranchisePage() {
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-0 overflow-y-auto lg:overflow-hidden no-scrollbar">
+      <div className="relative z-20 flex-1 flex flex-col lg:flex-row gap-0 overflow-y-auto lg:overflow-hidden no-scrollbar">
 
         {/* LEFT: Player Info (40%) */}
         <div className="lg:w-2/5 border-r border-white/5 p-4 md:p-6 flex flex-col gap-4">
@@ -258,36 +258,46 @@ export default function FranchisePage() {
             </div>
           )}
 
+          {/* Diagnostic Debug Panel (Always visible for now to debug) */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-[10px] uppercase tracking-widest font-bold flex flex-wrap gap-4 backdrop-blur-sm">
+            <div className="flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${socket?.connected ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`} />
+              SOCKET: <span className={socket?.connected ? 'text-green-400' : 'text-red-400'}>{socket?.connected ? 'CONNECTED' : 'DISCONNECTED'}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${auction.sessionId ? 'bg-green-500' : 'bg-red-500'}`} />
+              SESSION: <span className={auction.sessionId ? 'text-green-400' : 'text-red-400'}>{auction.sessionId ? 'ACTIVE' : 'NONE'}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${canBid ? 'bg-green-500' : 'bg-red-500'}`} />
+              ELIGIBLE: <span className={canBid ? 'text-green-400' : 'text-red-400'}>{canBid ? 'YES' : 'NO'}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${auction.isBidding ? 'bg-yellow-500 animate-spin' : 'bg-green-500'}`} />
+              STATUS: <span className={auction.isBidding ? 'text-yellow-400' : 'text-green-400'}>{auction.isBidding ? 'PROCESSING...' : 'READY'}</span>
+            </div>
+            <button 
+              onClick={() => { auction.setBidding(false); requestStateSync(); fetchFranchises(); }}
+              className="ml-auto px-3 py-1 bg-white/10 hover:bg-white/20 rounded-lg text-[8px] transition-colors border border-white/10"
+            >
+              FORCE SYNC / UNSTUCK
+            </button>
+          </div>
+
           {/* Bid Buttons */}
           {hasPlayer && isLive && (
             <div className="relative">
-              {/* Diagnostic Debug Panel (Visible only if connection or eligibility is an issue) */}
-              {(!socket?.connected || !canBid || !auction.sessionId) && (
-                <div className="mb-4 bg-blue-500/10 border border-blue-500/30 rounded-2xl p-4 text-[10px] uppercase tracking-widest font-bold text-blue-400 flex flex-wrap gap-4">
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${socket?.connected ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`} />
-                    SOCKET: {socket?.connected ? 'CONNECTED' : 'DISCONNECTED'}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${auction.sessionId ? 'bg-green-500' : 'bg-red-500'}`} />
-                    SESSION: {auction.sessionId ? 'ACTIVE' : 'NONE'}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${canBid ? 'bg-green-500' : 'bg-red-500'}`} />
-                    ELIGIBLE: {canBid ? 'YES' : 'NO'}
-                  </div>
-                </div>
-              )}
-
               {!canBid && (
                 <div className="absolute inset-0 bg-black/70 backdrop-blur-md rounded-[2rem] z-10 flex items-center justify-center p-6 text-center border border-white/10">
                   <div>
                     <div className="text-5xl mb-4">🛑</div>
                     <p className="text-white font-black text-xl uppercase tracking-tight">Bid Restricted</p>
                     <p className="text-white/40 text-sm mt-2 font-medium">
-                      {myFranchise?.squad_count >= 25 ? 'Your squad is full (25/25)' :
-                       myFranchise?.overseas_count >= 8 && auction.currentPlayer?.nationality === 'Overseas' ? 'Overseas limit reached (8/8)' :
-                       'Insufficient purse remaining'}
+                      {!myFranchise ? 'Franchise data not found' :
+                       myFranchise.purse_remaining < auction.currentHighestBid ? `Insufficient purse (${formatMoney(myFranchise.purse_remaining)})` :
+                       myFranchise.squad_count >= 25 ? 'Your squad is full (25/25)' :
+                       myFranchise.overseas_count >= 8 && auction.currentPlayer?.nationality === 'Overseas' ? 'Overseas limit reached (8/8)' :
+                       'Bidding restricted'}
                     </p>
                   </div>
                 </div>
@@ -302,8 +312,8 @@ export default function FranchisePage() {
                   {bidIncrements.map(({ label, amount, increment }) => (
                     <button key={amount} onClick={() => handleBid(amount)}
                       disabled={auction.isBidding || !canBid}
-                      className="flex flex-col items-center justify-center gap-1 p-4 md:p-5 rounded-2xl bg-white/5 hover:bg-gold text-white hover:text-black border border-white/10 hover:border-gold transition-all duration-300 disabled:opacity-30 disabled:hover:bg-white/5 disabled:hover:text-white group transform active:scale-95 shadow-lg">
-                      <span className="text-[10px] font-black uppercase tracking-tighter opacity-50 group-hover:opacity-100">+{increment}</span>
+                      className="flex flex-col items-center justify-center gap-1 p-4 md:p-5 rounded-2xl bg-white/10 hover:bg-gold text-white hover:text-black border border-white/20 hover:border-gold transition-all duration-300 disabled:opacity-30 disabled:hover:bg-white/10 disabled:hover:text-white group transform active:scale-95 shadow-lg">
+                      <span className="text-[10px] font-black uppercase tracking-tighter group-hover:opacity-100">+{increment}</span>
                       <span className="font-display font-black text-base md:text-xl tracking-tighter">{label}</span>
                     </button>
                   ))}
