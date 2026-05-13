@@ -24,7 +24,7 @@ const httpServer = createServer(app);
 // ─── Socket.io Setup ─────────────────────────────────────────────────────────
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: [process.env.FRONTEND_URL, 'http://localhost:5173', 'https://auction-x-2.vercel.app'].filter(Boolean),
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -35,9 +35,22 @@ const io = new Server(httpServer, {
 initSocketServer(io);
 
 // ─── Global Middlewares ───────────────────────────────────────────────────────
-app.use(helmet());
+// Relax Helmet CSP for external media (Mixkit video) and allow Vercel origins
+app.use(helmet({
+  contentSecurityPolicy: false, // Disabling CSP for simpler external asset loading during tournament
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginEmbedderPolicy: false
+}));
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    const allowed = [process.env.FRONTEND_URL, 'http://localhost:5173', 'https://auction-x-2.vercel.app'].filter(Boolean);
+    if (!origin || allowed.includes(origin) || origin.endsWith('.vercel.app')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
