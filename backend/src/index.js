@@ -71,23 +71,36 @@ app.use('/api/admin', adminRoutes);
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
 app.get('/api/health', async (_req, res) => {
+  const healthStatus = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    services: {
+      database: 'checking...',
+      redis: 'checking...',
+    },
+    errors: {}
+  };
+
   try {
-    const pgResult = await pool.query('SELECT 1');
-    const redisResult = await redis.ping();
-    res.json({
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      services: {
-        database: pgResult.rows.length > 0 ? 'healthy' : 'degraded',
-        redis: redisResult === 'PONG' ? 'healthy' : 'degraded',
-      },
-    });
+    await pool.query('SELECT 1');
+    healthStatus.services.database = 'healthy';
   } catch (err) {
-    res.status(503).json({
-      status: 'degraded',
-      error: err.message,
-    });
+    healthStatus.status = 'degraded';
+    healthStatus.services.database = 'failed';
+    healthStatus.errors.database = err.message;
   }
+
+  try {
+    const redisResult = await redis.ping();
+    healthStatus.services.redis = redisResult === 'PONG' ? 'healthy' : 'failed';
+  } catch (err) {
+    healthStatus.status = 'degraded';
+    healthStatus.services.redis = 'failed';
+    healthStatus.errors.redis = err.message;
+  }
+
+  const statusCode = healthStatus.status === 'ok' ? 200 : 503;
+  res.status(statusCode).json(healthStatus);
 });
 
 // ─── Global Error Handler (must be last) ─────────────────────────────────────
